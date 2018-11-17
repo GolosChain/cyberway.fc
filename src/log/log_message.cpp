@@ -66,9 +66,9 @@ namespace fc
        my->thread_name  = obj["thread_name"].as_string();
        if (obj.contains("task_name"))
          my->task_name    = obj["task_name"].as_string();
-       my->timestamp    = obj["timestamp"].as<time_point>();
+       my->timestamp    = obj["timestamp"].as_time_point();
        if( obj.contains( "context" ) )
-           my->context      = obj["context"].as<string>();
+           my->context      = obj["context"].as_string();
    }
 
    fc::string log_context::to_string()const

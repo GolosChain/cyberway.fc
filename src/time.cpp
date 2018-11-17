@@ -64,16 +64,17 @@ namespace fc {
   } FC_RETHROW_EXCEPTIONS( warn, "unable to convert ISO-formatted string to fc::time_point" ) }
 
   void to_variant( const fc::time_point& t, variant& v ) {
-    v = fc::string( t );
+    v = t;
   }
+
   void from_variant( const fc::variant& v, fc::time_point& t ) {
-    t = fc::time_point::from_iso_string( v.as_string() );
+    t = v.as_time_point();
   }
   void to_variant( const fc::time_point_sec& t, variant& v ) {
-    v = fc::string( t );
+    v = t;
   }
   void from_variant( const fc::variant& v, fc::time_point_sec& t ) {
-    t = fc::time_point_sec::from_iso_string( v.as_string() );
+    t = v.as_time_point_sec();
   }
 
   // inspired by show_date_relative() in git's date.c
