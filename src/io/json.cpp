@@ -656,6 +656,13 @@ namespace fc
               to_stream(os, o, format );
               return;
            }
+         case variant::time_type:
+              escape_string( v.as_string(), os );
+              return;
+         case variant::uint128_type:
+         case variant::int128_type:
+              os << v.as_string();
+              return;
          default:
             FC_THROW_EXCEPTION( fc::invalid_arg_exception, "Unsupported variant type: " + std::to_string( v.get_type() ) );
       }
