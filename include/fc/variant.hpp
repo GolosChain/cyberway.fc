@@ -53,6 +53,7 @@ namespace fc
    template<typename T, typename... Args> void to_variant( const boost::multi_index_container<T,Args...>& s, variant& v );
    template<typename T, typename... Args> void from_variant( const variant& v, boost::multi_index_container<T,Args...>& s );
 
+   using __uint128 = unsigned __int128;
    using namespace boost::multiprecision;
    template<size_t Size>
    using UInt = number<cpp_int_backend<Size, Size, unsigned_magnitude, unchecked, void> >;
@@ -201,15 +202,18 @@ namespace fc
       public:
         enum type_id
         {
-           null_type   = 0,
-           int64_type  = 1,
-           uint64_type = 2,
-           double_type = 3,
-           bool_type   = 4,
-           string_type = 5,
-           array_type  = 6,
-           object_type = 7,
-           blob_type   = 8
+           null_type    = 0,
+           int64_type   = 1,
+           uint64_type  = 2,
+           double_type  = 3,
+           bool_type    = 4,
+           string_type  = 5,
+           array_type   = 6,
+           object_type  = 7,
+           blob_type    = 8,
+           time_type    = 9,
+           int128_type  = 10,
+           uint128_type = 11
         };
 
         /// Constructs a null_type variant
@@ -240,6 +244,10 @@ namespace fc
         variant( variants );
         variant( const variant& );
         variant( variant&& );
+        variant( const fc::time_point& time );
+        variant( const fc::time_point_sec& time );
+        variant( const __int128& val );
+        variant( const __uint128& val );
        ~variant();
 
         /**
@@ -258,6 +266,7 @@ namespace fc
               virtual void handle( const string& v )const        = 0;
               virtual void handle( const variant_object& v)const = 0;
               virtual void handle( const variants& v)const       = 0;
+              virtual void handle( const time_point& v)const     = 0;
         };
 
         void  visit( const visitor& v )const;
@@ -273,6 +282,10 @@ namespace fc
         bool                        is_object()const;
         bool                        is_array()const;
         bool                        is_blob()const;
+        bool                        is_time()const;
+        bool                        is_int128()const;
+        bool                        is_uint128()const;
+
         /**
          *   int64, uint64, double,bool
          */
@@ -290,6 +303,11 @@ namespace fc
         blob&                       get_blob();
         const blob&                 get_blob()const;
         blob                        as_blob()const;
+        time_point                  as_time_point()const;
+        time_point_sec              as_time_point_sec()const;
+        __uint128                   as_uint128()const;
+        __int128                    as_int128()const;
+
 
         /** Convert's double, ints, bools, etc to a string
          * @throw if get_type() == array_type | get_type() == object_type
@@ -365,6 +383,13 @@ namespace fc
 
 
         void    clear();
+
+      private:
+
+        int64_t uint128_to_int64() const;
+        uint64_t uint128_to_uint64() const;
+        double uint128_to_double() const;
+
       private:
         void    init();
         double  _data;                ///< Alligned according to double requirements
@@ -671,5 +696,5 @@ namespace fc
 
 #include <fc/reflect/reflect.hpp>
 FC_REFLECT_TYPENAME( fc::variant )
-FC_REFLECT_ENUM( fc::variant::type_id, (null_type)(int64_type)(uint64_type)(double_type)(bool_type)(string_type)(array_type)(object_type)(blob_type) )
+FC_REFLECT_ENUM( fc::variant::type_id, (null_type)(int64_type)(uint64_type)(double_type)(bool_type)(string_type)(array_type)(object_type)(blob_type)(time_type)(int128_type)(uint128_type) )
 FC_REFLECT( fc::blob, (data) );
