@@ -604,10 +604,10 @@ namespace fc
    {
       switch( v.get_type() )
       {
-         case variant::null_type:
+         case variant::type_id::null_type:
               os << "null";
               return;
-         case variant::int64_type:
+         case variant::type_id::int64_type:
          {
               int64_t i = v.as_int64();
               if( format == json::stringify_large_ints_and_doubles &&
@@ -618,7 +618,7 @@ namespace fc
 
               return;
          }
-         case variant::uint64_type:
+         case variant::type_id::uint64_type:
          {
               uint64_t i = v.as_uint64();
               if( format == json::stringify_large_ints_and_doubles &&
@@ -629,42 +629,42 @@ namespace fc
 
               return;
          }
-         case variant::double_type:
+         case variant::type_id::double_type:
               if (format == json::stringify_large_ints_and_doubles)
                  os << '"'<<v.as_string()<<'"';
               else
                  os << v.as_string();
               return;
-         case variant::bool_type:
+         case variant::type_id::bool_type:
               os << v.as_string();
               return;
-         case variant::string_type:
+         case variant::type_id::string_type:
               escape_string( v.get_string(), os );
               return;
-         case variant::blob_type:
+         case variant::type_id::blob_type:
               escape_string( v.as_string(), os );
               return;
-         case variant::array_type:
+         case variant::type_id::array_type:
            {
               const variants&  a = v.get_array();
               to_stream( os, a, format );
               return;
            }
-         case variant::object_type:
+         case variant::type_id::object_type:
            {
               const variant_object& o =  v.get_object();
               to_stream(os, o, format );
               return;
            }
-         case variant::time_type:
+         case variant::type_id::time_type:
               escape_string( v.as_string(), os );
               return;
-         case variant::uint128_type:
-         case variant::int128_type:
+         case variant::type_id::uint128_type:
+         case variant::type_id::int128_type:
               os << v.as_string();
               return;
          default:
-            FC_THROW_EXCEPTION( fc::invalid_arg_exception, "Unsupported variant type: " + std::to_string( v.get_type() ) );
+            FC_THROW_EXCEPTION( fc::invalid_arg_exception, "Unsupported variant type: ${type}", ("type", static_cast<int8_t>(v.get_type())));
       }
    }
 
