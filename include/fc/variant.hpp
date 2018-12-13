@@ -15,12 +15,16 @@
 #include <fc/container/deque_fwd.hpp>
 #include <fc/container/flat_fwd.hpp>
 #include <fc/smart_ref_fwd.hpp>
+#include <fc/time.hpp>
+
 #include <boost/multi_index_container_fwd.hpp>
 
 #include <boost/multiprecision/cpp_int.hpp>
 
 namespace fc
 {
+    class variant_object;
+    class mutable_variant_object;
    /**
     * @defgroup serializable Serializable _types
     * @brief Clas_ses that may be converted to/from an variant
@@ -34,12 +38,6 @@ namespace fc
     *  @endcode
     */
 
-   class variant;
-   class variant_object;
-   class mutable_variant_object;
-   class time_point;
-   class time_point_sec;
-   class microseconds;
    template<typename T> struct safe;
    template<typename... Types>
    class static_variant;
@@ -199,8 +197,25 @@ namespace fc
     */
    class variant
    {
+        union value {
+            int64_t as_int64;
+            uint64_t as_uint64;
+            double  as_double;
+            bool as_bool;
+            std::string* as_string;
+            variants* as_array;
+            variant_object* as_object;
+            blob* as_blob;
+            time_point as_time;
+            __int128 as_int128;
+            unsigned __int128 as_uint128;
+
+            value() {as_int128 = 0;}
+            ~value() {}
+        };
+
       public:
-        enum type_id
+        enum class type_id : uint8_t
         {
            null_type    = 0,
            int64_type   = 1,
@@ -224,8 +239,6 @@ namespace fc
         /// @param str - UTF8 string
         variant( const char* str );
         variant( char* str );
-        variant( wchar_t* str );
-        variant( const wchar_t* str );
         variant( float val );
         variant( uint8_t val );
         variant( int8_t val );
@@ -243,12 +256,20 @@ namespace fc
         variant( mutable_variant_object );
         variant( variants );
         variant( const variant& );
-        variant( variant&& );
         variant( const fc::time_point& time );
         variant( const fc::time_point_sec& time );
         variant( const __int128& val );
         variant( const __uint128& val );
-       ~variant();
+
+        variant( variant&& other) {
+            value_ = std::move(other.value_);
+            type_ = other.type_;
+            other.type_ = type_id::null_type;
+        }
+
+        ~variant() {
+            clear();
+        }
 
         /**
          *  Read-only access to the content of the variant.
@@ -258,15 +279,17 @@ namespace fc
            public:
               virtual ~visitor(){}
               /// handles null_type variants
-              virtual void handle()const                         = 0;
-              virtual void handle( const int64_t& v )const       = 0;
-              virtual void handle( const uint64_t& v )const      = 0;
-              virtual void handle( const double& v )const        = 0;
-              virtual void handle( const bool& v )const          = 0;
-              virtual void handle( const string& v )const        = 0;
-              virtual void handle( const variant_object& v)const = 0;
-              virtual void handle( const variants& v)const       = 0;
-              virtual void handle( const time_point& v)const     = 0;
+              virtual void handle()const                            = 0;
+              virtual void handle( const int64_t& v )const          = 0;
+              virtual void handle( const uint64_t& v )const         = 0;
+              virtual void handle( const double& v )const           = 0;
+              virtual void handle( const bool& v )const             = 0;
+              virtual void handle( const string& v )const           = 0;
+              virtual void handle( const variant_object& v)const    = 0;
+              virtual void handle( const variants& v)const          = 0;
+              virtual void handle( const time_point& v)const        = 0;
+              virtual void handle( const __int128& v)const          = 0;
+              virtual void handle( const unsigned __int128& v)const = 0;
         };
 
         void  visit( const visitor& v )const;
@@ -300,33 +323,26 @@ namespace fc
         bool                        as_bool()const;
         double                      as_double()const;
 
-        blob&                       get_blob();
-        const blob&                 get_blob()const;
-        blob                        as_blob()const;
+        blob&                       get_mutable_blob();
+        const blob&                 get_blob() const;
+
+        blob                        as_blob() const;
         time_point                  as_time_point()const;
         time_point_sec              as_time_point_sec()const;
         __uint128                   as_uint128()const;
         __int128                    as_int128()const;
-
-
-        /** Convert's double, ints, bools, etc to a string
-         * @throw if get_type() == array_type | get_type() == object_type
-         */
-        string                      as_string()const;
+        string                      as_string() const;
 
         /// @pre  get_type() == string_type
         const string&               get_string()const;
 
-        /// @throw if get_type() != array_type | null_type
-        variants&                   get_array();
+        /// @throw if get_type() != array_type
+        const variants&             get_array() const;
 
         /// @throw if get_type() != array_type
-        const variants&             get_array()const;
+        variants&                   get_mutable_array();
 
-        /// @throw if get_type() != object_type | null_type
-        variant_object&             get_object();
-
-        /// @throw if get_type() != object_type
+          /// @throw if get_type() != object_type
         const variant_object&       get_object()const;
 
         /// @pre is_object()
@@ -335,7 +351,6 @@ namespace fc
         const variant&              operator[]( size_t pos )const;
         /// @pre is_array()
         size_t                      size()const;
-
         /**
          *  _types that use non-intrusive variant conversion can implement the
          *  following method to implement conversion from variant to T.
@@ -362,7 +377,14 @@ namespace fc
            from_variant( *this, v );
         }
 
-        variant& operator=( variant&& v );
+        variant& operator=( variant&& other )
+        {
+            value_ = other.value_;
+            type_ = other.type_;
+            other.type_ = type_id::null_type;
+            return *this;
+        }
+
         variant& operator=( const variant& v );
 
         template<typename T>
@@ -374,26 +396,27 @@ namespace fc
         template<typename T>
         variant( const optional<T>& v )
         {
-           memset( this, 0, sizeof(*this) );
            if( v.valid() ) *this = variant(*v);
         }
 
         template<typename T>
         explicit variant( const T& val );
 
-
-        void    clear();
-
       private:
 
-        int64_t uint128_to_int64() const;
+        uint64_t to_uint64() const;
+        __uint128 to_uint128() const;
+
         uint64_t uint128_to_uint64() const;
         double uint128_to_double() const;
 
+        void clear();
+
       private:
         void    init();
-        double  _data;                ///< Alligned according to double requirements
-        char    _type[sizeof(void*)]; ///< pad to void* size
+
+        value value_;
+        type_id type_ = type_id::null_type;
    };
    typedef optional<variant> ovariant;
 
@@ -501,7 +524,6 @@ namespace fc
          vo.insert( itr->as< std::pair<K,T> >() );
    }
 
-
    template<typename T>
    void to_variant( const std::set<T>& var,  variant& vo )
    {
@@ -511,6 +533,7 @@ namespace fc
           vars[i] = variant(*itr);
        vo = vars;
    }
+
    template<typename T>
    void from_variant( const variant& var,  std::set<T>& vo )
    {
@@ -601,13 +624,12 @@ namespace fc
       p.second = vars[1].as<B>();
    }
 
-
    template<typename T>
    variant::variant( const T& val )
    {
-      memset( this, 0, sizeof(*this) );
       to_variant( val, *this );
    }
+
    #ifdef __APPLE__
    inline void to_variant( size_t s, variant& v ) { v = variant(uint64_t(s)); }
    #endif

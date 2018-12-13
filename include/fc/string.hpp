@@ -9,7 +9,7 @@ namespace fc
 {
     typedef std::string string;
 
-  int64_t  to_int64( const fc::string& );
+  int64_t to_int64( const fc::string& );
   uint64_t to_uint64( const fc::string& );
   double   to_double( const fc::string& );
   fc::string to_string( double );

@@ -69,7 +69,7 @@ namespace fc {
          auto ms = s.substr( dot );
          ms[0] = '1';
          while( ms.size() < 4 ) ms.push_back('0');
-         return time_point( time_point_sec::from_iso_string( s ) ) + milliseconds( to_int64(ms) - 1000 );
+         return time_point( time_point_sec::from_iso_string( s ) ) + milliseconds( to_uint64(ms) - 1000 );
       }
   } FC_RETHROW_EXCEPTIONS( warn, "unable to convert ISO-formatted string to fc::time_point" ) }
 

@@ -12,251 +12,174 @@
 #include <fc/reflect/variant.hpp>
 #include <fc/io/json.hpp>
 
+namespace {
+    const double DOUBLE_ACCURACY = 0.0000001;
+}
+
 namespace fc
 {
 /**
  *  The TypeID is stored in the 'last byte' of the variant.
  */
-void set_variant_type( variant* v, variant::type_id t)
-{
-   char* data = reinterpret_cast<char*>(v);
-   data[ sizeof(variant) -1 ] = t;
-}
-
 variant::variant()
 {
-   set_variant_type( this, null_type );
+   type_ = type_id::null_type;
+   value_.as_int128 = 0;
 }
 
 variant::variant( fc::nullptr_t )
 {
-   set_variant_type( this, null_type );
+    type_ = type_id::null_type;
+    value_.as_int128 = 0;
 }
 
 variant::variant( uint8_t val )
 {
-   *reinterpret_cast<uint64_t*>(this)  = val;
-   set_variant_type( this, uint64_type );
+    type_ = type_id::uint64_type;
+    value_.as_uint64 = val;
 }
 
 variant::variant( int8_t val )
 {
-   *reinterpret_cast<int64_t*>(this)  = val;
-   set_variant_type( this, int64_type );
+    type_ = type_id::int64_type;
+    value_.as_int64 = val;
 }
 
 variant::variant( uint16_t val )
 {
-   *reinterpret_cast<uint64_t*>(this)  = val;
-   set_variant_type( this, uint64_type );
+    type_ = type_id::uint64_type;
+    value_.as_uint64 = val;
 }
 
 variant::variant( int16_t val )
 {
-   *reinterpret_cast<int64_t*>(this)  = val;
-   set_variant_type( this, int64_type );
+    type_ = type_id::int64_type;
+    value_.as_int64 = val;
 }
 
 variant::variant( uint32_t val )
 {
-   *reinterpret_cast<uint64_t*>(this)  = val;
-   set_variant_type( this, uint64_type );
+    type_ = type_id::uint64_type;
+    value_.as_uint64 = val;
 }
 
 variant::variant( int32_t val )
 {
-   *reinterpret_cast<int64_t*>(this)  = val;
-   set_variant_type( this, int64_type );
+    type_ = type_id::int64_type;
+    value_.as_int64 = val;
 }
 
 variant::variant( uint64_t val )
 {
-   *reinterpret_cast<uint64_t*>(this)  = val;
-   set_variant_type( this, uint64_type );
+    type_ = type_id::uint64_type;
+    value_.as_uint64 = val;
 }
 
 variant::variant( int64_t val )
 {
-   *reinterpret_cast<int64_t*>(this)  = val;
-   set_variant_type( this, int64_type );
+    type_ = type_id::int64_type;
+    value_.as_int64 = val;
 }
 
 variant::variant( float val )
 {
-   *reinterpret_cast<double*>(this)  = val;
-   set_variant_type( this, double_type );
+    type_ = type_id::double_type;
+    value_.as_double = val;
 }
 
 variant::variant( double val )
 {
-   *reinterpret_cast<double*>(this)  = val;
-   set_variant_type( this, double_type );
+    type_ = type_id::double_type;
+    value_.as_double = val;
 }
 
 variant::variant( bool val )
 {
-   *reinterpret_cast<bool*>(this)  = val;
-   set_variant_type( this, bool_type );
+    type_ = type_id::bool_type;
+    value_.as_bool = val;
 }
 
 variant::variant( char* str )
 {
-   *reinterpret_cast<string**>(this)  = new string( str );
-   set_variant_type( this, string_type );
+    type_ = type_id::string_type;
+    value_.as_string = new std::string(str);
 }
 
 variant::variant( const char* str )
 {
-   *reinterpret_cast<string**>(this)  = new string( str );
-   set_variant_type( this, string_type );
-}
-
-// TODO: do a proper conversion to utf8
-variant::variant( wchar_t* str )
-{
-   size_t len = wcslen(str);
-   boost::scoped_array<char> buffer(new char[len]);
-   for (unsigned i = 0; i < len; ++i)
-     buffer[i] = (char)str[i];
-   *reinterpret_cast<string**>(this)  = new string(buffer.get(), len);
-   set_variant_type( this, string_type );
-}
-
-// TODO: do a proper conversion to utf8
-variant::variant( const wchar_t* str )
-{
-   size_t len = wcslen(str);
-   boost::scoped_array<char> buffer(new char[len]);
-   for (unsigned i = 0; i < len; ++i)
-     buffer[i] = (char)str[i];
-   *reinterpret_cast<string**>(this)  = new string(buffer.get(), len);
-   set_variant_type( this, string_type );
+    type_ = type_id::string_type;
+    value_.as_string = new std::string(str);;
 }
 
 variant::variant( fc::string val )
 {
-   *reinterpret_cast<string**>(this)  = new string( fc::move(val) );
-   set_variant_type( this, string_type );
+    type_ = type_id::string_type;
+    value_.as_string = new std::string(std::move(val));
 }
 variant::variant( blob val )
 {
-   *reinterpret_cast<blob**>(this)  = new blob( fc::move(val) );
-   set_variant_type( this, blob_type );
+    type_ = type_id::blob_type;
+    value_.as_blob = new blob(std::move(val));
 }
 
 variant::variant( variant_object obj)
 {
-   *reinterpret_cast<variant_object**>(this)  = new variant_object(fc::move(obj));
-   set_variant_type(this,  object_type );
+    type_ = type_id::object_type;
+    value_.as_object = new variant_object(std::move(obj));
 }
+
 variant::variant( mutable_variant_object obj)
 {
-   *reinterpret_cast<variant_object**>(this)  = new variant_object(fc::move(obj));
-   set_variant_type(this,  object_type );
+    type_ = type_id::object_type;
+    value_.as_object = new variant_object(std::move(obj));
 }
 
 variant::variant( variants arr )
 {
-   *reinterpret_cast<variants**>(this)  = new variants(fc::move(arr));
-   set_variant_type(this,  array_type );
+    type_ = type_id::array_type;
+    value_.as_array = new variants(std::move(arr));
 }
 
-
-typedef const variant_object* const_variant_object_ptr;
-typedef const variants* const_variants_ptr;
-typedef const blob*   const_blob_ptr;
-typedef const string* const_string_ptr;
-
-void variant::clear()
+variant::variant(const time_point& time)
 {
-   switch( get_type() )
-   {
-     case object_type:
-        delete *reinterpret_cast<variant_object**>(this);
-        break;
-     case array_type:
-        delete *reinterpret_cast<variants**>(this);
-        break;
-     case string_type:
-        delete *reinterpret_cast<string**>(this);
-        break;
-     default:
-        break;
-   }
-   set_variant_type( this, null_type );
-}
-
-variant::variant( const variant& v )
-{
-   switch( v.get_type() )
-   {
-       case object_type:
-          *reinterpret_cast<variant_object**>(this)  =
-             new variant_object(**reinterpret_cast<const const_variant_object_ptr*>(&v));
-          set_variant_type( this, object_type );
-          return;
-       case array_type:
-          *reinterpret_cast<variants**>(this)  =
-             new variants(**reinterpret_cast<const const_variants_ptr*>(&v));
-          set_variant_type( this,  array_type );
-          return;
-       case string_type:
-          *reinterpret_cast<string**>(this)  =
-             new string(**reinterpret_cast<const const_string_ptr*>(&v) );
-          set_variant_type( this, string_type );
-          return;
-       default:
-          memcpy( this, &v, sizeof(v) );
-   }
-}
-
-variant::variant(const time_point& time) {
-    *reinterpret_cast<string**>(this) = new string( time );
-    set_variant_type( this, time_type );
+    type_ = type_id::time_type;
+    value_.as_time = time;
 }
 
 variant::variant(const time_point_sec& time)
 {
-    *reinterpret_cast<string**>(this) = new string( time );
-    set_variant_type( this, time_type );
+    type_ = type_id::time_type;
+    value_.as_time = time;
 }
 
-namespace {
-    fc::string* bytes_to_hex_string_ptr(const char* val, size_t size) {
-        fc::string* as_string = new string("0x");
-        as_string->append(to_hex( val, size));
-        return as_string;
+variant::variant(const __int128& val)
+{
+    type_ = type_id::int128_type;
+    value_.as_int128 = val;
+}
+
+variant::variant(const __uint128& val)
+{
+    type_ = type_id::uint128_type;
+    value_.as_uint128 = val;
+}
+
+variant::variant( const variant& v )
+{
+    *this = v;
+}
+
+void variant::clear()
+{
+    switch (type_) {
+        case type_id::array_type: delete value_.as_array; break;
+        case type_id::blob_type: delete value_.as_blob; break;
+        case type_id::object_type: delete value_.as_object; break;
+        case type_id::string_type: delete value_.as_string; break;
+        default: break;
     }
-}
+    type_ = type_id::null_type;
 
-variant::variant(const __int128& val) {
-    *reinterpret_cast<string**>(this) = bytes_to_hex_string_ptr(reinterpret_cast<const char*>(&val), sizeof(val));
-    set_variant_type(this, int128_type);
-}
-
-variant::variant(const __uint128& val) {
-    *reinterpret_cast<string**>(this) = bytes_to_hex_string_ptr(reinterpret_cast<const char*>(&val), sizeof(val));
-    set_variant_type(this, uint128_type);
-}
-
-variant::variant( variant&& v )
-{
-   memcpy( this, &v, sizeof(v) );
-   set_variant_type( &v, null_type );
-}
-
-variant::~variant()
-{
-   clear();
-}
-
-variant& variant::operator=( variant&& v )
-{
-   if( this == &v ) return *this;
-   clear();
-   memcpy( (char*)this, (char*)&v, sizeof(v) );
-   set_variant_type( &v, null_type );
-   return *this;
 }
 
 variant& variant::operator=( const variant& v )
@@ -265,25 +188,24 @@ variant& variant::operator=( const variant& v )
       return *this;
 
    clear();
+   type_ = v.type_;
    switch( v.get_type() )
    {
-      case object_type:
-         *reinterpret_cast<variant_object**>(this)  =
-            new variant_object((**reinterpret_cast<const const_variant_object_ptr*>(&v)));
-         break;
-      case array_type:
-         *reinterpret_cast<variants**>(this)  =
-            new variants((**reinterpret_cast<const const_variants_ptr*>(&v)));
-         break;
-      case string_type:
-      case time_type:
-         *reinterpret_cast<string**>(this)  = new string((**reinterpret_cast<const const_string_ptr*>(&v)) );
-         break;
-
-      default:
-         memcpy( this, &v, sizeof(v) );
+        case type_id::object_type:
+            value_.as_object = new variant_object(v.get_object());
+            break;
+        case type_id::array_type:
+            value_.as_array = new variants(v.get_array());
+            break;
+        case type_id::string_type:
+            value_.as_string = new std::string(v.get_string());
+            break;
+        case type_id::blob_type:
+            value_.as_blob = new blob(v.get_blob());
+            break;
+        default:
+            value_.as_int128 = v.value_.as_int128;
    }
-   set_variant_type( this, v.get_type() );
    return *this;
 }
 
@@ -291,31 +213,39 @@ void  variant::visit( const visitor& v )const
 {
    switch( get_type() )
    {
-      case null_type:
+      case type_id::null_type:
          v.handle();
          return;
-      case int64_type:
-         v.handle( *reinterpret_cast<const int64_t*>(this) );
+      case type_id::int64_type:
+         v.handle(value_.as_int64);
          return;
-      case uint64_type:
-         v.handle( *reinterpret_cast<const uint64_t*>(this) );
+      case type_id::uint64_type:
+         v.handle(value_.as_uint64);
          return;
-      case double_type:
-         v.handle( *reinterpret_cast<const double*>(this) );
+      case type_id::double_type:
+         v.handle(value_.as_double);
          return;
-      case bool_type:
-         v.handle( *reinterpret_cast<const bool*>(this) );
+      case type_id::bool_type:
+         v.handle(value_.as_bool);
          return;
-      case string_type:
-      case time_type:
-         v.handle( **reinterpret_cast<const const_string_ptr*>(this) );
+      case type_id::string_type:
+         v.handle(*value_.as_string);
          return;
-      case array_type:
-         v.handle( **reinterpret_cast<const const_variants_ptr*>(this) );
+      case type_id::time_type:
+         v.handle(value_.as_time);
          return;
-      case object_type:
-         v.handle( **reinterpret_cast<const const_variant_object_ptr*>(this) );
+      case type_id::array_type:
+         v.handle(*value_.as_array);
          return;
+      case type_id::object_type:
+         v.handle(*value_.as_object);
+         return;
+      case type_id::int128_type:
+         v.handle(value_.as_int128);
+           return;
+      case type_id::uint128_type:
+         v.handle(value_.as_uint128);
+          return;
       default:
          FC_THROW_EXCEPTION( assert_exception, "Invalid Type / Corrupted Memory" );
    }
@@ -323,42 +253,44 @@ void  variant::visit( const visitor& v )const
 
 variant::type_id variant::get_type()const
 {
-   return (type_id)reinterpret_cast<const char*>(this)[sizeof(*this)-1];
+   return type_;
 }
 
 bool variant::is_null()const
 {
-   return get_type() == null_type;
+   return get_type() == type_id::null_type;
 }
 
 bool variant::is_string()const
 {
-   return get_type() == string_type;
+   return get_type() == type_id::string_type;
 }
 bool variant::is_bool()const
 {
-   return get_type() == bool_type;
+   return get_type() == type_id::bool_type;
 }
 bool variant::is_double()const
 {
-   return get_type() == double_type;
+   return get_type() == type_id::double_type;
 }
 bool variant::is_uint64()const
 {
-   return get_type() == uint64_type;
+   return get_type() == type_id::uint64_type;
 }
 bool variant::is_int64()const
 {
-   return get_type() == int64_type;
+   return get_type() == type_id::int64_type;
 }
 
 bool variant::is_integer()const
 {
    switch( get_type() )
    {
-      case int64_type:
-      case uint64_type:
-      case bool_type:
+      case type_id::int64_type:
+      case type_id::uint64_type:
+      case type_id::int128_type:
+      case type_id::uint128_type:
+      case type_id::bool_type:
          return true;
       default:
          return false;
@@ -369,10 +301,12 @@ bool variant::is_numeric()const
 {
    switch( get_type() )
    {
-      case int64_type:
-      case uint64_type:
-      case double_type:
-      case bool_type:
+      case type_id::int64_type:
+      case type_id::uint64_type:
+      case type_id::int128_type:
+      case type_id::uint128_type:
+      case type_id::double_type:
+      case type_id::bool_type:
          return true;
       default:
          return false;
@@ -382,116 +316,92 @@ bool variant::is_numeric()const
 
 bool variant::is_object()const
 {
-   return get_type() == object_type;
+   return get_type() == type_id::object_type;
 }
 
 bool variant::is_array()const
 {
-   return get_type() == array_type;
+   return get_type() == type_id::array_type;
 }
 bool variant::is_blob()const
 {
-    return get_type() == blob_type;
+    return get_type() == type_id::blob_type;
 }
 
 bool variant::is_time() const
 {
-    return get_type() == time_type;
+    return get_type() == type_id::time_type;
 }
 
 bool variant::is_int128() const
 {
-    return get_type() == int128_type;
+    return get_type() == type_id::int128_type;
 }
 
 bool variant::is_uint128() const
 {
-    return get_type() == uint128_type;
+    return get_type() == type_id::uint128_type;
 }
 
-int64_t variant::as_int64()const
-{ try {
-   switch( get_type() )
-   {
-      case string_type:
-          return to_int64(**reinterpret_cast<const const_string_ptr*>(this));
-      case double_type:
-          return int64_t(*reinterpret_cast<const double*>(this));
-      case int64_type:
-          return *reinterpret_cast<const int64_t*>(this);
-      case uint64_type:
-          return int64_t(*reinterpret_cast<const uint64_t*>(this));
-      case bool_type:
-          return *reinterpret_cast<const bool*>(this);
-      case null_type:
-          return 0;
-      case uint128_type:
-      case int128_type:
-          return uint128_to_int64();
-      default:
-         FC_THROW_EXCEPTION( bad_cast_exception, "Invalid cast from ${type} to int64", ("type", get_type()) );
-   }
-} FC_CAPTURE_AND_RETHROW( (*this) ) }
+int64_t variant::as_int64() const try {
+    return to_uint64();
+} catch (const bad_cast_exception&) {
+    FC_THROW_EXCEPTION( bad_cast_exception, "Invalid cast from ${type} to int64", ("type", get_type()) );
+}
 
-int64_t variant::uint128_to_int64() const {
-    const __uint128 val = as_uint128();
-    if (val > std::numeric_limits<uint64_t>::max()) {
-        FC_THROW_EXCEPTION( bad_cast_exception, "Invalid cast from ${type} to int64", ("type", get_type()));
+uint64_t variant::as_uint64() const try {
+    return to_uint64();
+} catch (const bad_cast_exception&) {
+    FC_THROW_EXCEPTION( bad_cast_exception, "Invalid cast from ${type} to uint64", ("type", get_type()) );
+}
+
+uint64_t variant::to_uint64() const {
+    switch( get_type() )
+    {
+       case type_id::string_type:
+           return fc::to_uint64(*value_.as_string);
+       case type_id::double_type:
+           return int64_t(value_.as_double);
+       case type_id::int64_type:
+       case type_id::uint64_type:
+           return value_.as_int64;
+       case type_id::bool_type:
+           return value_.as_bool;
+       case type_id::null_type:
+           return 0;
+       case type_id::uint128_type:
+       case type_id::int128_type:
+           return uint128_to_uint64();
+       default:
+          throw bad_cast_exception();
     }
-    return static_cast<int64_t>(val);
 }
-
-uint64_t variant::as_uint64()const
-{ try {
-   switch( get_type() )
-   {
-      case string_type:
-          return to_uint64(**reinterpret_cast<const const_string_ptr*>(this));
-      case double_type:
-          return static_cast<uint64_t>(*reinterpret_cast<const double*>(this));
-      case int64_type:
-          return static_cast<uint64_t>(*reinterpret_cast<const int64_t*>(this));
-      case uint64_type:
-          return *reinterpret_cast<const uint64_t*>(this);
-      case bool_type:
-          return static_cast<uint64_t>(*reinterpret_cast<const bool*>(this));
-      case null_type:
-          return 0;
-      case uint128_type:
-      case int128_type:
-          return uint128_to_uint64();
-      default:
-         FC_THROW_EXCEPTION( bad_cast_exception,"Invalid cast from ${type} to uint64", ("type",get_type()));
-   }
-} FC_CAPTURE_AND_RETHROW( (*this) ) }
-
 
 uint64_t variant::uint128_to_uint64() const {
-    const __uint128 val = as_uint128();
-    if (val > std::numeric_limits<uint64_t>::max()) {
-        FC_THROW_EXCEPTION( bad_cast_exception, "Invalid cast from ${type} to uint64", ("type", get_type()));
+    if (value_.as_uint128 > std::numeric_limits<uint64_t>::max()) {
+        throw bad_cast_exception();
     }
-    return static_cast<uint64_t>(val);
+    return value_.as_uint128;
 }
 
 double  variant::as_double()const
 {
    switch( get_type() )
    {
-      case string_type:
-          return to_double(**reinterpret_cast<const const_string_ptr*>(this));
-      case double_type:
-          return *reinterpret_cast<const double*>(this);
-      case int64_type:
-          return static_cast<double>(*reinterpret_cast<const int64_t*>(this));
-      case uint64_type:
-          return static_cast<double>(*reinterpret_cast<const uint64_t*>(this));
-      case bool_type:
-          return *reinterpret_cast<const bool*>(this);
-      case null_type:
+      case type_id::string_type:
+          return to_double(*value_.as_string);
+      case type_id::double_type:
+          return value_.as_double;
+      case type_id::int64_type:
+          return static_cast<double>(value_.as_int64);
+      case type_id::uint64_type:
+          return static_cast<double>(value_.as_uint64);
+      case type_id::bool_type:
+          return static_cast<double>(value_.as_bool);
+      case type_id::null_type:
           return 0;
-      case uint128_type:
-      case int128_type:
+      case type_id::uint128_type:
+      case type_id::int128_type:
           return uint128_to_double();
       default:
          FC_THROW_EXCEPTION( bad_cast_exception, "Invalid cast from ${type} to double", ("type",get_type()) );
@@ -499,202 +409,158 @@ double  variant::as_double()const
 }
 
 double variant::uint128_to_double() const {
-    const __uint128 val = as_uint128();
+    const __uint128 val = value_.as_uint128;
     if (val > std::numeric_limits<uint64_t>::max()) {
         FC_THROW_EXCEPTION( bad_cast_exception, "Invalid cast from ${type} to double", ("type", get_type()));
     }
     return static_cast<double>(val);
 }
 
-bool  variant::as_bool()const
+bool variant::as_bool() const
 {
    switch( get_type() )
    {
-      case string_type:
+      case type_id::string_type:
       {
-          const string& s = **reinterpret_cast<const const_string_ptr*>(this);
-          if( s == "true" )
+          if( *value_.as_string == "true" )
              return true;
-          if( s == "false" )
+          if( *value_.as_string == "false" )
              return false;
           FC_THROW_EXCEPTION( bad_cast_exception, "Cannot convert string to bool (only \"true\" or \"false\" can be converted)" );
       }
-      case double_type:
-          return *reinterpret_cast<const double*>(this) != 0.0;
-      case int64_type:
-          return *reinterpret_cast<const int64_t*>(this) != 0;
-      case uint64_type:
-          return *reinterpret_cast<const uint64_t*>(this) != 0;
-      case bool_type:
-          return *reinterpret_cast<const bool*>(this);
-      case null_type:
+      case type_id::double_type:
+          return std::abs(value_.as_double - 0.0) < DOUBLE_ACCURACY;
+      case type_id::int64_type:
+      case type_id::uint64_type:
+          return value_.as_int64 != 0;
+      case type_id::bool_type:
+          return value_.as_bool;
+      case type_id::null_type:
           return false;
-      case uint128_type:
-      case int128_type:
-          return as_int128() != 0;
+      case type_id::uint128_type:
+      case type_id::int128_type:
+          return value_.as_int128 != 0;
       default:
          FC_THROW_EXCEPTION( bad_cast_exception, "Invalid cast from ${type} to bool" , ("type",get_type()));
    }
 }
 
-string    variant::as_string()const
+string variant::as_string() const
 {
    switch( get_type() )
    {
-      case string_type:
-          return **reinterpret_cast<const const_string_ptr*>(this);
-      case double_type:
-          return to_string(*reinterpret_cast<const double*>(this));
-      case int64_type:
-          return to_string(*reinterpret_cast<const int64_t*>(this));
-      case uint64_type:
-          return to_string(*reinterpret_cast<const uint64_t*>(this));
-      case bool_type:
-          return *reinterpret_cast<const bool*>(this) ? "true" : "false";
-      case blob_type:
-          if( get_blob().data.size() )
-             return base64_encode( get_blob().data.data(), get_blob().data.size() ) + "=";
+      case type_id::string_type:
+          return *value_.as_string;
+      case type_id::double_type:
+          return to_string(value_.as_double);
+      case type_id::int64_type:
+          return to_string(value_.as_int64);
+      case type_id::uint64_type:
+          return to_string(value_.as_uint64);
+      case type_id::bool_type:
+          return value_.as_bool ? "true" : "false";
+      case type_id::blob_type:
+          if(!value_.as_blob->data.empty())
+             return base64_encode(value_.as_blob->data) + "=";
           return string();
-      case null_type:
+      case type_id::null_type:
           return string();
-      case time_type:
-           return **reinterpret_cast<const const_string_ptr*>(this);
-      case int128_type:
-      case uint128_type:
-         return **reinterpret_cast<const const_string_ptr*>(this);
+      case type_id::time_type:
+           return static_cast<std::string>(value_.as_time);
+      case type_id::int128_type:
+           return boost::lexical_cast<std::string>(value_.as_int128);
+      case type_id::uint128_type:
+           return boost::lexical_cast<std::string>(value_.as_uint128);
 
       default:
       FC_THROW_EXCEPTION( bad_cast_exception, "Invalid cast from ${type} to string", ("type", get_type() ) );
    }
 }
 
-
-/// @throw if get_type() != array_type | null_type
-variants&         variant::get_array()
+blob& variant::get_mutable_blob()
 {
-  if( get_type() == array_type )
-     return **reinterpret_cast<variants**>(this);
-
-  FC_THROW_EXCEPTION( bad_cast_exception, "Invalid cast from ${type} to Array", ("type",get_type()) );
-}
-blob&         variant::get_blob()
-{
-  if( get_type() == blob_type )
-     return **reinterpret_cast<blob**>(this);
-
-  FC_THROW_EXCEPTION( bad_cast_exception, "Invalid cast from ${type} to Blob", ("type",get_type()) );
-}
-const blob&         variant::get_blob()const
-{
-  if( get_type() == blob_type )
-     return **reinterpret_cast<const const_blob_ptr*>(this);
+  if( get_type() == type_id::blob_type )
+     return *value_.as_blob;
 
   FC_THROW_EXCEPTION( bad_cast_exception, "Invalid cast from ${type} to Blob", ("type",get_type()) );
 }
 
-blob variant::as_blob()const
+const blob& variant::get_blob() const
+{
+    return const_cast<variant*>(this)->get_mutable_blob();
+}
+
+blob variant::as_blob() const
 {
    switch( get_type() )
    {
-      case null_type: return blob();
-      case blob_type: return get_blob();
-      case string_type:
+      case type_id::null_type: return blob();
+      case type_id::blob_type: return *value_.as_blob;
+      case type_id::string_type:
       {
-         const string& str = get_string();
-         if( str.size() == 0 ) return blob();
-         if( str.back() == '=' )
+         if( value_.as_string->empty()) return blob();
+         if( value_.as_string->back() == '=' )
          {
-            std::string b64 = base64_decode( get_string() );
-            return blob( { std::vector<char>( b64.begin(), b64.end() ) } );
+            const std::string b64 = base64_decode(*value_.as_string);
+            return blob({std::vector<char>(b64.begin(), b64.end())});
          }
-         return blob( { std::vector<char>( str.begin(), str.end() ) } );
+         return blob( { std::vector<char>( value_.as_string->begin(), value_.as_string->end() ) } );
       }
-      case object_type:
-      case array_type:
-         FC_THROW_EXCEPTION( bad_cast_exception, "Invalid cast from ${type} to Blob", ("type",get_type()) );
       default:
-         return blob( { std::vector<char>( (char*)&_data, (char*)&_data + sizeof(_data) ) } );
+      case type_id::array_type:
+         FC_THROW_EXCEPTION( bad_cast_exception, "Invalid cast from ${type} to Blob", ("type",get_type()) );
    }
 }
 
 time_point variant::as_time_point() const {
-    if (get_type() == time_type || get_type() == string_type)
-        return fc::time_point::from_iso_string(**reinterpret_cast<const const_string_ptr*>(this));
-
+    if (get_type() == type_id::time_type) {
+        return value_.as_time;
+    } else if(get_type() == type_id::string_type) {
+        return fc::time_point::from_iso_string(*value_.as_string);
+    }
     FC_THROW_EXCEPTION( bad_cast_exception, "Invalid cast from ${type} to Time Point", ("type", get_type()) );
 }
 
 time_point_sec variant::as_time_point_sec() const {
-    if (get_type() == time_type || get_type() == string_type)
-        return fc::time_point_sec::from_iso_string(**reinterpret_cast<const const_string_ptr*>(this));
-
-    FC_THROW_EXCEPTION( bad_cast_exception, "Invalid cast from ${type} to Time Point", ("type", get_type()) );
+   return as_time_point();
 }
 
-__uint128_t variant::as_uint128() const
-{
-    if( is_uint128() || is_int128() || is_string()) {
-        __int128 val = 0;
-         auto s = *reinterpret_cast<const const_string_ptr*>(this);
-
-        FC_ASSERT( s->size() == 2 + 2 * sizeof(val) && s->find("0x") == 0,
-                   "Failure in converting hex data into a uint128_t");
-        auto sz = from_hex( s->substr(2), reinterpret_cast<char*>(&val), sizeof(val) );
-
-        // Assumes platform is little endian and hex representation of 128-bit integer is in little endian order.
-
-        FC_ASSERT( sz == sizeof(val), "Failure in converting hex data into a uint128_t" );
-        return val;
-    } else try {
-       return as_uint64();
-    } catch (const bad_cast_exception&) {
-       FC_THROW_EXCEPTION( bad_cast_exception, "Cannot convert variant of type '${type}' into a uint128_t", ("type", get_type()) );
+__uint128_t variant::as_uint128() const {
+    try {
+        return to_uint128();
+    } catch (...) {
+        FC_THROW_EXCEPTION( bad_cast_exception, "Cannot convert variant of type '${type}' into a uint128", ("type", get_type()) );
     }
 }
 
-__int128 variant::as_int128() const
-{
-    if( is_uint128() || is_int128() || is_string()) {
-        __int128 val = 0;
-        auto s = *reinterpret_cast<const const_string_ptr*>(this);
+__int128 variant::as_int128() const {
+    try {
+        return to_uint128();
+    } catch (...) {
+        FC_THROW_EXCEPTION( bad_cast_exception, "Cannot convert variant of type '${type}' into a int128", ("type", get_type()) );
+    }
+}
 
-        FC_ASSERT( s->size() == 2 + 2 * sizeof(val) && s->find("0x") == 0,
-                   "Failure in converting hex data into a uint128_t");
-        auto sz = from_hex( s->substr(2), reinterpret_cast<char*>(&val), sizeof(val) );
-
-        // Assumes platform is little endian and hex representation of 128-bit integer is in little endian order.
-
-        FC_ASSERT( sz == sizeof(val), "Failure in converting hex data into a int128_t" );
-        return val;
-    } else try {
+__uint128 variant::to_uint128() const {
+    if( is_uint128() || is_int128()) {
+        return value_.as_uint128;
+    } else if (is_string()) {
+       return boost::lexical_cast<__int128>(value_.as_string);
+    } else {
        return as_uint64();
-    } catch (const bad_cast_exception&) {
-       FC_THROW_EXCEPTION( bad_cast_exception, "Cannot convert variant of type '${type}' into a int128_t", ("type", get_type()) );
     }
 }
 
 /// @throw if get_type() != array_type
-const variants&       variant::get_array()const
-{
-  if( get_type() == array_type )
-     return **reinterpret_cast<const const_variants_ptr*>(this);
-  FC_THROW_EXCEPTION( bad_cast_exception, "Invalid cast from ${type} to Array", ("type",get_type()) );
-}
-
-
-/// @throw if get_type() != object_type | null_type
-variant_object&        variant::get_object()
-{
-  if( get_type() == object_type )
-     return **reinterpret_cast<variant_object**>(this);
-  FC_THROW_EXCEPTION( bad_cast_exception, "Invalid cast from ${type} to Object", ("type",get_type()) );
+const variants& variant::get_array() const {
+    return const_cast<variant*>(this)->get_mutable_array();
 }
 
 const variant& variant::operator[]( const char* key )const
 {
     return get_object()[key];
 }
-const variant&    variant::operator[]( size_t pos )const
+const variant& variant::operator[]( size_t pos )const
 {
     return get_array()[pos];
 }
@@ -704,18 +570,22 @@ size_t            variant::size()const
     return get_array().size();
 }
 
-const string&        variant::get_string()const
-{
-  if( get_type() == string_type )
-     return **reinterpret_cast<const const_string_ptr*>(this);
+variants& variant::get_mutable_array() {
+    if( get_type() == type_id::array_type )
+       return *value_.as_array;
+    FC_THROW_EXCEPTION( bad_cast_exception, "Invalid cast from ${type} to an Array", ("type",get_type()) );
+}
+
+const string& variant::get_string() const {
+  if( get_type() == type_id::string_type )
+     return *value_.as_string;
   FC_THROW_EXCEPTION( bad_cast_exception, "Invalid cast from type '${type}' to string", ("type",get_type()) );
 }
 
 /// @throw if get_type() != object_type
-const variant_object&  variant::get_object()const
-{
-  if( get_type() == object_type )
-     return **reinterpret_cast<const const_variant_object_ptr*>(this);
+const variant_object&  variant::get_object() const {
+  if( get_type() == type_id::object_type )
+     return *value_.as_object;
   FC_THROW_EXCEPTION( bad_cast_exception, "Invalid cast from type '${type}' to Object", ("type",get_type()) );
 }
 
@@ -918,9 +788,12 @@ string      format_string( const string& format, const variant_object& args )
    bool operator == ( const variant& a, const variant& b )
    {
       if( a.is_string()  || b.is_string() ) return a.as_string() == b.as_string();
-      if( a.is_double()  || b.is_double() ) return a.as_double() == b.as_double(); // a.as_double() - b.as_double() > accuracy?
+      if( a.is_double()  || b.is_double() ) return std::abs(a.as_double() - b.as_double()) < DOUBLE_ACCURACY;
       if( a.is_int64()   || b.is_int64() )  return a.as_int64() == b.as_int64();
       if( a.is_uint64()  || b.is_uint64() ) return a.as_uint64() == b.as_uint64();
+      if( a.is_int128()  || b.is_int128() ) return a.as_int128() == b.as_int128();
+      if( a.is_uint128() || b.is_uint128() ) return a.as_uint128() == b.as_uint128();
+      if( a.is_time()    || b.is_time() )  return a.as_time_point() == b.as_time_point();
       if( a.is_array()   || b.is_array() )  return a.get_array() == b.get_array();
       if( a.is_bool()    || b.is_bool() )   return a.as_bool() == b.as_bool();
       return false;

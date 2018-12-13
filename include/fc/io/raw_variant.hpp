@@ -59,51 +59,51 @@ namespace fc { namespace raw {
       unpack( s, t );
       switch( t )
       {
-         case variant::null_type:
+         case variant::type_id::null_type:
             return;
-         case variant::int64_type:
+         case variant::type_id::int64_type:
          {
             int64_t val;
             raw::unpack(s,val);
             v = val;
             return;
          }
-         case variant::uint64_type:
+         case variant::type_id::uint64_type:
          {
             uint64_t val;
             raw::unpack(s,val);
             v = val;
             return;
          }
-         case variant::double_type:
+         case variant::type_id::double_type:
          {
             double val;
             raw::unpack(s,val);
             v = val;
             return;
          }
-         case variant::bool_type:
+         case variant::type_id::bool_type:
          {
             bool val;
             raw::unpack(s,val);
             v = val;
             return;
          }
-         case variant::string_type:
+         case variant::type_id::string_type:
          {
             fc::string val;
             raw::unpack(s,val);
             v = fc::move(val);
             return;
          }
-         case variant::array_type:
+         case variant::type_id::array_type:
          {
             variants val;
             raw::unpack(s,val);
             v = fc::move(val);
             return;
          }
-         case variant::object_type:
+         case variant::type_id::object_type:
          {
             variant_object val; 
             raw::unpack(s,val);
