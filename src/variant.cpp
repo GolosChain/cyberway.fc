@@ -169,21 +169,17 @@ variant::variant( const variant& v )
     *this = v;
 }
 
-variant::~variant()
-{
-    clear();
-}
-
 void variant::clear()
 {
-    type_ = type_id::null_type;
     switch (type_) {
-        case type_id::array_type: delete value_.as_array; return;
-        case type_id::blob_type: delete value_.as_blob; return;
-        case type_id::object_type: delete value_.as_object; return;
-        case type_id::string_type: delete value_.as_string; return;
-        default: return;
+        case type_id::array_type: delete value_.as_array; break;
+        case type_id::blob_type: delete value_.as_blob; break;
+        case type_id::object_type: delete value_.as_object; break;
+        case type_id::string_type: delete value_.as_string; break;
+        default: break;
     }
+    type_ = type_id::null_type;
+
 }
 
 variant& variant::operator=( const variant& v )
@@ -204,8 +200,11 @@ variant& variant::operator=( const variant& v )
         case type_id::string_type:
             value_.as_string = new std::string(v.get_string());
             break;
+        case type_id::blob_type:
+            value_.as_blob = new blob(v.get_blob());
+            break;
         default:
-            memcpy( &value_, &v.value_, sizeof(value_) );
+            value_.as_int128 = v.value_.as_int128;
    }
    return *this;
 }
@@ -467,15 +466,28 @@ string variant::as_string() const
       case type_id::null_type:
           return string();
       case type_id::time_type:
-           return value_.as_time;
+           return static_cast<std::string>(value_.as_time);
       case type_id::int128_type:
-           return boost::lexical_cast<std::string>(value_.as_int64);
+           return boost::lexical_cast<std::string>(value_.as_int128);
       case type_id::uint128_type:
-           return boost::lexical_cast<std::string>(value_.as_uint64);
+           return boost::lexical_cast<std::string>(value_.as_uint128);
 
       default:
       FC_THROW_EXCEPTION( bad_cast_exception, "Invalid cast from ${type} to string", ("type", get_type() ) );
    }
+}
+
+blob& variant::get_mutable_blob()
+{
+  if( get_type() == type_id::blob_type )
+     return *value_.as_blob;
+
+  FC_THROW_EXCEPTION( bad_cast_exception, "Invalid cast from ${type} to Blob", ("type",get_type()) );
+}
+
+const blob& variant::get_blob() const
+{
+    return const_cast<variant*>(this)->get_mutable_blob();
 }
 
 blob variant::as_blob() const

@@ -267,7 +267,9 @@ namespace fc
             other.type_ = type_id::null_type;
         }
 
-        ~variant();
+        ~variant() {
+            clear();
+        }
 
         /**
          *  Read-only access to the content of the variant.
@@ -320,6 +322,9 @@ namespace fc
         uint64_t                    as_uint64()const;
         bool                        as_bool()const;
         double                      as_double()const;
+
+        blob&                       get_mutable_blob();
+        const blob&                 get_blob() const;
 
         blob                        as_blob() const;
         time_point                  as_time_point()const;
