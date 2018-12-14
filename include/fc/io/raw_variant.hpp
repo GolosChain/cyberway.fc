@@ -57,7 +57,8 @@ namespace fc { namespace raw {
     {
       uint8_t t;
       unpack( s, t );
-      switch( t )
+      const variant::type_id type = static_cast<variant::type_id>(t);
+      switch( type )
       {
          case variant::type_id::null_type:
             return;
