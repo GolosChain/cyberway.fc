@@ -198,36 +198,36 @@ namespace fc
 
    mutable_variant_object::iterator mutable_variant_object::find( const string& key )const
    {
-      return find( key.c_str() );
+       for( auto itr = begin(); itr != end(); ++itr )
+       {
+          if( itr->key() == key )
+          {
+             return itr;
+          }
+       }
+       return end();
    }
 
    mutable_variant_object::iterator mutable_variant_object::find( const char* key )const
    {
-      for( auto itr = begin(); itr != end(); ++itr )
-      {
-         if( itr->key() == key )
-         {
-            return itr;
-         }
-      }
-      return end();
+      return find(key);
    }
 
    mutable_variant_object::iterator mutable_variant_object::find( const string& key )
    {
-      return find( key.c_str() );
+       for( auto itr = begin(); itr != end(); ++itr )
+       {
+          if( itr->key() == key )
+          {
+             return itr;
+          }
+       }
+       return end();
    }
 
    mutable_variant_object::iterator mutable_variant_object::find( const char* key )
    {
-      for( auto itr = begin(); itr != end(); ++itr )
-      {
-         if( itr->key() == key )
-         {
-            return itr;
-         }
-      }
-      return end();
+       return find(key);
    }
 
    const variant& mutable_variant_object::operator[]( const string& key )const
@@ -329,14 +329,14 @@ namespace fc
    /** replaces the value at \a key with \a var or insert's \a key if not found */
    mutable_variant_object& mutable_variant_object::set( string key, variant var )
    {
-      auto itr = find( key.c_str() );
+      auto itr = find(key);
       if( itr != end() )
       {
          itr->set( fc::move(var) );
       }
       else
       {
-         _key_value->push_back( entry( fc::move(key), fc::move(var) ) );
+         _key_value->emplace_back(fc::move(key), fc::move(var));
       }
       return *this;
    }
@@ -346,12 +346,13 @@ namespace fc
     */
    mutable_variant_object& mutable_variant_object::operator()( string key, variant var )
    {
-      _key_value->push_back( entry( fc::move(key), fc::move(var) ) );
+      _key_value->emplace_back(fc::move(key), fc::move(var));
       return *this;
    }
 
    mutable_variant_object& mutable_variant_object::operator()( const variant_object& vo )
    {
+      _key_value->reserve(vo.size());
       for( const variant_object::entry& e : vo )
          set( e.key(), e.value() );
       return *this;
@@ -361,6 +362,7 @@ namespace fc
    {
       if( &mvo == this )     // mvo(mvo) is no-op
          return *this;
+      _key_value->reserve(mvo.size());
       for( const mutable_variant_object::entry& e : mvo )
          set( e.key(), e.value() );
       return *this;

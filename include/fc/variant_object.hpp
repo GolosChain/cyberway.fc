@@ -207,9 +207,9 @@ namespace fc
       mutable_variant_object( string key, variant val );
       template<typename T>
       mutable_variant_object( string key, T&& val )
-      :_key_value( new std::vector<entry>() )
+      :_key_value( new std::vector<entry>(1) )
       {
-         set( std::move(key), variant(forward<T>(val)) );
+         (*_key_value)[0] = entry(fc::move(key), variant(fc::forward<T>(val)));
       }
 
       mutable_variant_object( mutable_variant_object&& );
