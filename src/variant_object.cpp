@@ -62,11 +62,6 @@ namespace fc
 
    variant_object::iterator variant_object::find( const string& key )const
    {
-      return find( key.c_str() );
-   }
-
-   variant_object::iterator variant_object::find( const char* key )const
-   {
       for( auto itr = begin(); itr != end(); ++itr )
       {
          if( itr->key() == key )
@@ -77,16 +72,21 @@ namespace fc
       return end();
    }
 
-   const variant& variant_object::operator[]( const string& key )const
+   variant_object::iterator variant_object::find( const char* key )const
    {
-      return (*this)[key.c_str()];
+      return find( std::string(key) );
    }
 
-   const variant& variant_object::operator[]( const char* key )const
+   const variant& variant_object::operator[]( const string& key )const
    {
       auto itr = find( key );
       if( itr != end() ) return itr->value();
       FC_THROW_EXCEPTION( key_not_found_exception, "Key ${key}", ("key",key) );
+   }
+
+   const variant& variant_object::operator[]( const char* key )const
+   {
+      return (*this)[std::string(key)];
    }
 
    size_t variant_object::size() const
@@ -115,8 +115,8 @@ namespace fc
    variant_object::variant_object( variant_object&& obj)
    : _key_value( fc::move(obj._key_value) )
    {
-      obj._key_value = std::make_shared<std::vector<entry>>();
-      FC_ASSERT( _key_value != nullptr );
+//      obj._key_value = std::make_shared<std::vector<entry>>();
+//      FC_ASSERT( _key_value != nullptr );
    }
 
    variant_object::variant_object( const mutable_variant_object& obj )
@@ -152,7 +152,7 @@ namespace fc
    variant_object& variant_object::operator=( mutable_variant_object&& obj )
    {
       _key_value = fc::move(obj._key_value);
-      obj._key_value.reset( new std::vector<entry>() );
+//      obj._key_value.reset( new std::vector<entry>() );
       return *this;
    }
 
@@ -210,7 +210,7 @@ namespace fc
 
    mutable_variant_object::iterator mutable_variant_object::find( const char* key )const
    {
-      return find(key);
+      return find(std::string(key));
    }
 
    mutable_variant_object::iterator mutable_variant_object::find( const string& key )
@@ -227,31 +227,31 @@ namespace fc
 
    mutable_variant_object::iterator mutable_variant_object::find( const char* key )
    {
-       return find(key);
+       return find(std::string(key));
    }
 
    const variant& mutable_variant_object::operator[]( const string& key )const
-   {
-      return (*this)[key.c_str()];
-   }
-
-   const variant& mutable_variant_object::operator[]( const char* key )const
    {
       auto itr = find( key );
       if( itr != end() ) return itr->value();
       FC_THROW_EXCEPTION( key_not_found_exception, "Key ${key}", ("key",key) );
    }
-   variant& mutable_variant_object::operator[]( const string& key )
-   {
-      return (*this)[key.c_str()];
-   }
 
-   variant& mutable_variant_object::operator[]( const char* key )
+   const variant& mutable_variant_object::operator[]( const char* key )const
+   {
+      return (*this)[std::string(key)];
+   }
+   variant& mutable_variant_object::operator[]( const string& key )
    {
       auto itr = find( key );
       if( itr != end() ) return itr->value();
       _key_value->emplace_back(entry(key, variant()));
       return _key_value->back().value();
+   }
+
+   variant& mutable_variant_object::operator[]( const char* key )
+   {
+       return (*this)[std::string(key)];
    }
 
    size_t mutable_variant_object::size() const
@@ -262,12 +262,20 @@ namespace fc
    mutable_variant_object::mutable_variant_object()
       :_key_value(new std::vector<entry>)
    {
+       reserve(100);
    }
 
    mutable_variant_object::mutable_variant_object( string key, variant val )
       : _key_value(new std::vector<entry>())
    {
+       reserve(100);
        _key_value->push_back(entry(fc::move(key), fc::move(val)));
+   }
+
+    mutable_variant_object::mutable_variant_object( variant v )
+        : _key_value( new std::vector<entry>() )
+   {
+       this->operator=(fc::move(v));
    }
 
    mutable_variant_object::mutable_variant_object( const variant_object& obj )
@@ -300,6 +308,27 @@ namespace fc
       return *this;
    }
 
+   mutable_variant_object& mutable_variant_object::operator=( variant v )
+   {
+      if( v.type_ == variant::type_id::object_type )
+      {
+         auto& obj = *v.value_.as_object;
+         if (obj._key_value.use_count() == 1)
+         {
+            *_key_value = fc::move(*obj._key_value);
+         }
+         else
+         {
+            *_key_value = *obj._key_value;
+         }
+      }
+      else
+      {
+          v.get_object(); //<- Force to throw exception about wrong type
+      }
+      return *this;
+   }
+
    mutable_variant_object& mutable_variant_object::operator=( const mutable_variant_object& obj )
    {
       if (this != &obj)
@@ -311,7 +340,7 @@ namespace fc
 
    void mutable_variant_object::reserve( size_t s )
    {
-      _key_value->reserve(s);
+      _key_value->reserve(_key_value->size() + s);
    }
 
    void  mutable_variant_object::erase( const string& key )
@@ -352,7 +381,7 @@ namespace fc
 
    mutable_variant_object& mutable_variant_object::operator()( const variant_object& vo )
    {
-      _key_value->reserve(vo.size());
+      reserve(vo.size());
       for( const variant_object::entry& e : vo )
          set( e.key(), e.value() );
       return *this;
@@ -362,7 +391,7 @@ namespace fc
    {
       if( &mvo == this )     // mvo(mvo) is no-op
          return *this;
-      _key_value->reserve(mvo.size());
+      reserve(mvo.size());
       for( const mutable_variant_object::entry& e : mvo )
          set( e.key(), e.value() );
       return *this;
