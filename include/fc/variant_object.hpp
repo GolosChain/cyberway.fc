@@ -209,14 +209,17 @@ namespace fc
       mutable_variant_object( string key, T&& val )
       :_key_value( new std::vector<entry>() )
       {
-         set( std::move(key), variant(forward<T>(val)) );
+         reserve(100);
+         _key_value->emplace_back(fc::move(key), variant(fc::forward<T>(val)));
       }
 
       mutable_variant_object( mutable_variant_object&& );
+      mutable_variant_object( variant );
       mutable_variant_object( const mutable_variant_object& );
       mutable_variant_object( const variant_object& );
 
       mutable_variant_object& operator=( mutable_variant_object&& );
+      mutable_variant_object& operator=( variant );
       mutable_variant_object& operator=( const mutable_variant_object& );
       mutable_variant_object& operator=( const variant_object& );
    private:

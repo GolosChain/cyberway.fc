@@ -18,20 +18,6 @@ namespace {
 
 namespace fc
 {
-/**
- *  The TypeID is stored in the 'last byte' of the variant.
- */
-variant::variant()
-{
-   type_ = type_id::null_type;
-   value_.as_int128 = 0;
-}
-
-variant::variant( fc::nullptr_t )
-{
-    type_ = type_id::null_type;
-    value_.as_int128 = 0;
-}
 
 variant::variant( uint8_t val )
 {
@@ -192,16 +178,16 @@ variant& variant::operator=( const variant& v )
    switch( v.get_type() )
    {
         case type_id::object_type:
-            value_.as_object = new variant_object(v.get_object());
+            value_.as_object = new variant_object(*v.value_.as_object);
             break;
         case type_id::array_type:
-            value_.as_array = new variants(v.get_array());
+            value_.as_array = new variants(*v.value_.as_array);
             break;
         case type_id::string_type:
-            value_.as_string = new std::string(v.get_string());
+            value_.as_string = new std::string(*v.value_.as_string);
             break;
         case type_id::blob_type:
-            value_.as_blob = new blob(v.get_blob());
+            value_.as_blob = new blob(*v.value_.as_blob);
             break;
         default:
             value_.as_int128 = v.value_.as_int128;
@@ -249,11 +235,6 @@ void  variant::visit( const visitor& v )const
       default:
          FC_THROW_EXCEPTION( assert_exception, "Invalid Type / Corrupted Memory" );
    }
-}
-
-variant::type_id variant::get_type()const
-{
-   return type_;
 }
 
 bool variant::is_null()const

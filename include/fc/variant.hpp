@@ -211,7 +211,7 @@ namespace fc
             unsigned __int128 as_uint128;
 
             value() {as_int128 = 0;}
-            ~value() {}
+            ~value() = default;
         };
 
       public:
@@ -232,9 +232,9 @@ namespace fc
         };
 
         /// Constructs a null_type variant
-        variant();
+        variant() = default;
         /// Constructs a null_type variant
-        variant( nullptr_t );
+        variant( nullptr_t ) { }
 
         /// @param str - UTF8 string
         variant( const char* str );
@@ -262,13 +262,13 @@ namespace fc
         variant( const __uint128& val );
 
         variant( variant&& other) {
-            value_ = std::move(other.value_);
+            value_ = fc::move(other.value_);
             type_ = other.type_;
             other.type_ = type_id::null_type;
         }
 
         ~variant() {
-            clear();
+            if (type_ != type_id::null_type) clear();
         }
 
         /**
@@ -294,7 +294,7 @@ namespace fc
 
         void  visit( const visitor& v )const;
 
-        type_id                     get_type()const;
+        type_id                     get_type()const   { return type_; }
 
         bool                        is_null()const;
         bool                        is_string()const;
@@ -402,6 +402,7 @@ namespace fc
         template<typename T>
         explicit variant( const T& val );
 
+        void clear();
       private:
 
         uint64_t to_uint64() const;
@@ -410,13 +411,13 @@ namespace fc
         uint64_t uint128_to_uint64() const;
         double uint128_to_double() const;
 
-        void clear();
-
       private:
         void    init();
 
         value value_;
         type_id type_ = type_id::null_type;
+
+        friend class mutable_variant_object;
    };
    typedef optional<variant> ovariant;
 
