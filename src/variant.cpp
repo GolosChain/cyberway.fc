@@ -16,8 +16,27 @@ namespace {
     const double DOUBLE_ACCURACY = 0.0000001;
 }
 
-namespace fc
-{
+#ifdef __APPLE__
+#   if __apple_build_version__ < 9020039 || __clang_major__ == 4   // 902.00.39 is clang 5, not actually checked, is it works there
+#       define ABSENT__INT128_TYPEID
+#   endif
+#endif
+
+template<typename A>
+inline __int128 lexical_cast_128(const A& arg) {
+#ifdef ABSENT__INT128_TYPEID
+    __int128 result = 0;
+    if (!boost::conversion::detail::try_lexical_convert(arg, result)) {
+        boost::throw_exception(boost::bad_lexical_cast());  // don't pass typeid(__int128), which prevents linking
+    }
+    return result;
+#else
+    return boost::lexical_cast<__int128>(arg);
+#endif
+}
+
+
+namespace fc {
 
 variant::variant( uint8_t val )
 {
@@ -526,7 +545,7 @@ __uint128 variant::to_uint128() const {
     if( is_uint128() || is_int128()) {
         return value_.as_uint128;
     } else if (is_string()) {
-       return boost::lexical_cast<__int128>(value_.as_string);
+       return lexical_cast_128(value_.as_string);
     } else {
        return as_uint64();
     }
