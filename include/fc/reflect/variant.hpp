@@ -28,11 +28,11 @@ namespace fc
          void add( mutable_variant_object& vo, const char* name, const optional<M>& v )const
          { 
             if( v.valid() )
-               vo(name,*v);
+               vo(name,variant(*v));
          }
          template<typename M>
          void add( mutable_variant_object& vo, const char* name, const M& v )const
-         { vo(name,v); }
+         { vo(name,variant(v)); }
 
          mutable_variant_object& vo;
          const T& val;
