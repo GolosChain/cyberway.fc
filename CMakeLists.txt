@@ -37,6 +37,8 @@ IF(NOT APPLE)
  # Linux or other unix
  SET(rt_library rt )
  SET(pthread_library pthread)
+ELSE(NOT APPLE)
+ ADD_COMPILE_FLAG("-D_GNU_SOURCE")
 ENDIF(NOT APPLE)
 
 IF(NOT "$ENV{OPENSSL_ROOT_DIR}" STREQUAL "")
