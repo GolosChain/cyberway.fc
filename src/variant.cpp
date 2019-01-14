@@ -236,6 +236,8 @@ void  variant::visit( const visitor& v )const
       case type_id::string_type:
          v.handle(*value_.as_string);
          return;
+       case type_id::blob_type:
+         v.handle(as_string());
       case type_id::time_type:
          v.handle(value_.as_time);
          return;
@@ -247,10 +249,10 @@ void  variant::visit( const visitor& v )const
          return;
       case type_id::int128_type:
          v.handle(value_.as_int128);
-           return;
+         return;
       case type_id::uint128_type:
          v.handle(value_.as_uint128);
-          return;
+         return;
       default:
          FC_THROW_EXCEPTION( assert_exception, "Invalid Type / Corrupted Memory" );
    }
@@ -461,7 +463,8 @@ string variant::as_string() const
           return value_.as_bool ? "true" : "false";
       case type_id::blob_type:
           if(!value_.as_blob->data.empty())
-             return base64_encode(value_.as_blob->data) + "=";
+             return to_hex(value_.as_blob->data);
+             //return base64_encode(value_.as_blob->data) + "=";
           return string();
       case type_id::null_type:
           return string();
@@ -499,10 +502,18 @@ blob variant::as_blob() const
       case type_id::string_type:
       {
          if( value_.as_string->empty()) return blob();
-         if( value_.as_string->back() == '=' )
-         {
-            const std::string b64 = base64_decode(*value_.as_string);
-            return blob({std::vector<char>(b64.begin(), b64.end())});
+//         if( value_.as_string->back() == '=' )
+//         {
+//            const std::string b64 = base64_decode(*value_.as_string);
+//            return blob({std::vector<char>(b64.begin(), b64.end())});
+//         }
+         if (value_.as_string->size() % 2 == 0) try {
+             blob b;
+             b.data.resize(value_.as_string->size() / 2);
+             from_hex(*value_.as_string, b.data.data(), b.data.size());
+             return b;
+         } catch(...) {
+             // skip
          }
          return blob( { std::vector<char>( value_.as_string->begin(), value_.as_string->end() ) } );
       }
@@ -688,18 +699,20 @@ void from_variant( const variant& var,  string& vo )
 void to_variant( const std::vector<char>& var,  variant& vo )
 {
   if( var.size() )
-      vo = variant(to_hex(var.data(),var.size()));
+      // vo = variant(to_hex(var.data(),var.size()));
+      vo = variant(blob{var});
   else vo = "";
 }
 void from_variant( const variant& var,  std::vector<char>& vo )
 {
-     auto str = var.as_string();
-     vo.resize( str.size() / 2 );
-     if( vo.size() )
-     {
-        size_t r = from_hex( str, vo.data(), vo.size() );
-        FC_ASSERT( r == vo.size() );
-     }
+     vo = var.as_blob().data;
+//     auto str = var.as_string();
+//     vo.resize( str.size() / 2 );
+//     if( vo.size() )
+//     {
+//        size_t r = from_hex( str, vo.data(), vo.size() );
+//        FC_ASSERT( r == vo.size() );
+//     }
 //   std::string b64 = base64_decode( var.as_string() );
 //   vo = std::vector<char>( b64.c_str(), b64.c_str() + b64.size() );
 }

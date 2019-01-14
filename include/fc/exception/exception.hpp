@@ -80,9 +80,13 @@ namespace fc
          exception( exception&& e );
          virtual ~exception();
 
-         const char*          name()const throw();
-         int64_t              code()const throw();
-         virtual const char*  what()const throw();
+         const char*          name() const throw();
+         int64_t              code() const throw();
+         virtual const char*  what() const throw();
+         const char*          strace()const throw();
+
+         static void enable_detailed_strace(bool value = true);
+         static bool is_detailed_strace();
 
          /**
           *   @return a reference to log messages that have

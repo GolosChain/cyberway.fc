@@ -2,6 +2,7 @@
 #include <boost/exception/all.hpp>
 #include <fc/log/logger.hpp>
 #include <fc/io/json.hpp>
+#include <fc/stacktrace.hpp>
 
 #include <iostream>
 
@@ -29,6 +30,8 @@ namespace fc
 
    namespace detail
    {
+      static bool detailed_strace_ = false;
+
       class exception_impl
       {
          public:
@@ -36,8 +39,19 @@ namespace fc
             std::string     _what;
             int64_t         _code;
             log_messages    _elog;
+            fc::stacktrace  _strace;
+            std::string     _slog;
       };
    }
+
+   void exception::enable_detailed_strace(bool value) {
+      detail::detailed_strace_ = value;
+   }
+
+   bool exception::is_detailed_strace() {
+      return detail::detailed_strace_;
+   }
+
    exception::exception( log_messages&& msgs, int64_t code,
                                     const std::string& name_value,
                                     const std::string& what_value )
@@ -117,9 +131,19 @@ namespace fc
    exception::exception( exception&& c )
    :my( fc::move(c.my) ){}
 
-   const char*  exception::name()const throw() { return my->_name.c_str(); }
-   const char*  exception::what()const throw() { return my->_what.c_str(); }
-   int64_t      exception::code()const throw() { return my->_code;         }
+   const char*  exception::name() const throw() { return my->_name.c_str();  }
+   const char*  exception::what() const throw() { return my->_what.c_str();  }
+   int64_t      exception::code() const throw() { return my->_code;          }
+   const char*  exception::strace()const throw() {
+       if (my->_slog.empty()) {
+          if (detail::detailed_strace_) {
+             my->_slog = fc::to_detail_string(my->_strace);
+          } else {
+             my->_slog = fc::to_string(my->_strace);
+          }
+       }
+       return my->_slog.c_str();
+   }
 
    exception::~exception(){}
 
@@ -128,7 +152,8 @@ namespace fc
       v = mutable_variant_object( "code", e.code() )
                                 ( "name", e.name() )
                                 ( "message", e.what() )
-                                ( "stack", e.get_log() );
+                                ( "stack", e.get_log() )
+                                ( "strace", e.strace() );
 
    }
    void          from_variant( const variant& v, exception& ll )
@@ -142,6 +167,8 @@ namespace fc
          ll.my->_name = obj["name"].as_string();
       if( obj.contains( "message" ) )
          ll.my->_what = obj["message"].as_string();
+      if (obj.contains( "strace"))
+         ll.my->_slog = obj["strace"].as_string();
    }
 
    const log_messages&   exception::get_log()const { return my->_elog; }
@@ -180,6 +207,10 @@ namespace fc
             }
             if( itr != my->_elog.end()) ss << "\n";
          }
+         strace();
+         if (!my->_slog.empty()) {
+            ss << "\nstacktrace:\n" << my->_slog;
+         }
       } catch( std::bad_alloc& ) {
          throw;
       } catch( ... ) {
@@ -212,6 +243,10 @@ namespace fc
             } catch( ... ) {
                ss << "<- exception in to_string.\n";
             }
+         }
+         strace();
+         if (!my->_slog.empty()) {
+            ss << "\nstacktrace:\n" << my->_slog;
          }
          return ss.str();
       } catch( std::bad_alloc& ) {
