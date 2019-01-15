@@ -92,6 +92,9 @@ namespace fc
       variant_object& operator=( mutable_variant_object&& );
       variant_object& operator=( const mutable_variant_object& );
 
+      bool operator==(const variant_object&) const;
+      bool operator==(const mutable_variant_object&) const;
+
    private:
       std::shared_ptr< std::vector< entry > > _key_value;
       friend class mutable_variant_object;
@@ -222,6 +225,8 @@ namespace fc
       mutable_variant_object& operator=( variant );
       mutable_variant_object& operator=( const mutable_variant_object& );
       mutable_variant_object& operator=( const variant_object& );
+
+      bool operator==(const variant_object&) const;
    private:
       std::unique_ptr< std::vector< entry > > _key_value;
       friend class variant_object;
