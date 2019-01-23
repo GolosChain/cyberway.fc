@@ -379,6 +379,10 @@ namespace fc
 
         variant& operator=( variant&& other )
         {
+            if (this == &other) return *this;
+
+            if (type_ != type_id::null_type) clear();
+
             value_ = other.value_;
             type_ = other.type_;
             other.type_ = type_id::null_type;
