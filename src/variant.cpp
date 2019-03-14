@@ -265,7 +265,7 @@ bool variant::is_null()const
 
 bool variant::is_string()const
 {
-   return get_type() == type_id::string_type;
+   return get_type() == type_id::string_type || get_type() == type_id::blob_type;
 }
 bool variant::is_bool()const
 {
@@ -587,10 +587,18 @@ variants& variant::get_mutable_array() {
     FC_THROW_EXCEPTION( bad_cast_exception, "Invalid cast from ${type} to an Array", ("type",get_type()) );
 }
 
+string& variant::get_mutable_string() {
+   if( get_type() == type_id::blob_type ) {
+       auto v = variant(as_string());
+       this->operator=(fc::move(v));
+   }
+   if( get_type() == type_id::string_type )
+      return *value_.as_string;
+   FC_THROW_EXCEPTION( bad_cast_exception, "Invalid cast from type '${type}' to string", ("type",get_type()) );
+}
+
 const string& variant::get_string() const {
-  if( get_type() == type_id::string_type )
-     return *value_.as_string;
-  FC_THROW_EXCEPTION( bad_cast_exception, "Invalid cast from type '${type}' to string", ("type",get_type()) );
+   return const_cast<variant*>(this)->get_mutable_string();
 }
 
 /// @throw if get_type() != object_type
