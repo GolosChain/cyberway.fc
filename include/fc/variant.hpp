@@ -334,6 +334,7 @@ namespace fc
         string                      as_string() const;
 
         /// @pre  get_type() == string_type
+        string&                     get_mutable_string();
         const string&               get_string()const;
 
         /// @throw if get_type() != array_type
@@ -383,7 +384,7 @@ namespace fc
 
             if (type_ != type_id::null_type) clear();
 
-            value_ = other.value_;
+            value_ = fc::move(other.value_);
             type_ = other.type_;
             other.type_ = type_id::null_type;
             return *this;
