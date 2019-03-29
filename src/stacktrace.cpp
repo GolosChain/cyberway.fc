@@ -39,7 +39,7 @@ namespace fc {
     }
 
     string get_btrace(const path& filename) { try {
-        if (has_btrace(filename)) return {};
+        if (!has_btrace(filename)) return {};
 
         // there is a btrace
         auto stream = std::ifstream(filename.string());
