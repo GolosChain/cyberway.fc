@@ -28,7 +28,7 @@ namespace fc
          {
             stringify_large_ints_and_doubles = 0,
             legacy_generator = 1,
-            default_generator = legacy_generator
+            default_generator = stringify_large_ints_and_doubles
          };
 
          static ostream& to_stream( ostream& out, const fc::string&);
