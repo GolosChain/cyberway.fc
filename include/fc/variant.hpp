@@ -268,7 +268,7 @@ namespace fc
         }
 
         ~variant() {
-            if (type_ != type_id::null_type) clear();
+            if (!is_null()) clear();
         }
 
         /**
@@ -296,18 +296,18 @@ namespace fc
 
         type_id                     get_type()const   { return type_; }
 
-        bool                        is_null()const;
+        bool                        is_null()const    { return type_ == type_id::null_type;    }
         bool                        is_string()const;
-        bool                        is_bool()const;
-        bool                        is_int64()const;
-        bool                        is_uint64()const;
-        bool                        is_double()const;
-        bool                        is_object()const;
-        bool                        is_array()const;
+        bool                        is_bool()const    { return type_ == type_id::bool_type;    }
+        bool                        is_int64()const   { return type_ == type_id::int64_type;   }
+        bool                        is_uint64()const  { return type_ == type_id::uint64_type;  }
+        bool                        is_double()const  { return type_ == type_id::double_type;  }
+        bool                        is_object()const  { return type_ == type_id::object_type;  }
+        bool                        is_array()const   { return type_ == type_id::array_type;   }
         bool                        is_blob()const;
-        bool                        is_time()const;
-        bool                        is_int128()const;
-        bool                        is_uint128()const;
+        bool                        is_time()const    { return type_ == type_id::time_type;    }
+        bool                        is_int128()const  { return type_ == type_id::int128_type;  }
+        bool                        is_uint128()const { return type_ == type_id::uint128_type; }
 
         /**
          *   int64, uint64, double,bool
