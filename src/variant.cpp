@@ -818,6 +818,7 @@ string      format_string( const string& format, const variant_object& args )
       if( a.is_array()   || b.is_array() )   return a.get_array() == b.get_array();
       if( a.is_bool()    || b.is_bool() )    return a.as_bool() == b.as_bool();
       if( a.is_object()  && b.is_object() )  return a.get_object() == b.get_object();
+      if( a.is_null()    && b.is_null() )    return true;
       return false;
    }
 
