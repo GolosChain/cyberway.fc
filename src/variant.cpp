@@ -258,30 +258,9 @@ void  variant::visit( const visitor& v )const
    }
 }
 
-bool variant::is_null()const
-{
-   return get_type() == type_id::null_type;
-}
-
 bool variant::is_string()const
 {
    return get_type() == type_id::string_type || get_type() == type_id::blob_type;
-}
-bool variant::is_bool()const
-{
-   return get_type() == type_id::bool_type;
-}
-bool variant::is_double()const
-{
-   return get_type() == type_id::double_type;
-}
-bool variant::is_uint64()const
-{
-   return get_type() == type_id::uint64_type;
-}
-bool variant::is_int64()const
-{
-   return get_type() == type_id::int64_type;
 }
 
 bool variant::is_integer()const
@@ -316,33 +295,9 @@ bool variant::is_numeric()const
    return false;
 }
 
-bool variant::is_object()const
-{
-   return get_type() == type_id::object_type;
-}
-
-bool variant::is_array()const
-{
-   return get_type() == type_id::array_type;
-}
 bool variant::is_blob()const
 {
     return get_type() == type_id::blob_type;
-}
-
-bool variant::is_time() const
-{
-    return get_type() == type_id::time_type;
-}
-
-bool variant::is_int128() const
-{
-    return get_type() == type_id::int128_type;
-}
-
-bool variant::is_uint128() const
-{
-    return get_type() == type_id::uint128_type;
 }
 
 int64_t variant::as_int64() const try {
