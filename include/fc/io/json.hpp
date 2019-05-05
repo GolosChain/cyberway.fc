@@ -22,7 +22,7 @@ namespace fc
             strict_parser         = 1,
             relaxed_parser        = 2,
             legacy_parser_with_string_doubles = 3,
-            default_parser        = relaxed_parser,
+            default_parser        = legacy_parser,
          };
          enum output_formatting
          {
