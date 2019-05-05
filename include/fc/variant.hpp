@@ -17,6 +17,8 @@
 #include <fc/smart_ref_fwd.hpp>
 #include <fc/time.hpp>
 
+#include <boost/tuple/tuple.hpp>
+
 #include <boost/multi_index_container_fwd.hpp>
 
 #include <boost/multiprecision/cpp_int.hpp>
@@ -184,7 +186,8 @@ namespace fc
    template<typename A, typename B>
    void from_variant( const variant& v, std::pair<A,B>& p );
 
-
+   template<typename... Elements>
+   void to_variant( const std::tuple<Elements...>& t, variant& v );
 
    /**
     * @brief stores null, int64, uint64, double, bool, string, std::vector<variant>,
@@ -708,6 +711,33 @@ namespace fc
    }
    template<typename T> void from_variant( const variant& v, boost::multiprecision::number<T>& n ) {
       n = boost::multiprecision::number<T>(v.get_string());
+   }
+
+   namespace detail {
+      template<int, int> struct tuple_to_variants;
+
+      template<int Max> struct tuple_to_variants<Max, Max> {
+         template<typename Tuple> void operator()( const Tuple&, variants& ) const {
+            // no more elements
+         }
+      };
+
+      template<int I, int Max> struct tuple_to_variants {
+         template<typename Tuple> void operator()( const Tuple& t, variants& vars ) const {
+            variant v;
+            to_variant(boost::tuples::get<I>(t), v);
+            vars.push_back(std::move(v));
+            tuple_to_variants<I + 1, Max>()(t, vars);
+         }
+      };
+   } // namespace detail
+
+   template<typename... Elements>
+   void to_variant( const boost::tuple<Elements...>& t, variant& v ) {
+      variants vars;
+      vars.reserve(boost::tuples::length<boost::tuple<Elements...>>::value);
+      detail::tuple_to_variants<0, boost::tuples::length<boost::tuple<Elements...>>::value>()(t, vars);
+      v = std::move(vars);
    }
 
    variant operator + ( const variant& a, const variant& b );
