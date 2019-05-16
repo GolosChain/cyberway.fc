@@ -95,6 +95,8 @@ namespace fc
       bool operator==(const variant_object&) const;
       bool operator==(const mutable_variant_object&) const;
 
+      bool has_value(const variant_object&) const;
+
    private:
       std::shared_ptr< std::vector< entry > > _key_value;
       friend class mutable_variant_object;

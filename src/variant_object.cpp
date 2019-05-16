@@ -162,6 +162,18 @@ namespace fc
       return *this;
    }
 
+   bool variant_object::has_value(const variant_object& obj) const {
+      if (size() == 0) return true;
+      if (size() < obj.size()) return false;
+
+      for (auto& e: obj) {
+         auto itr = find(e.key());
+         if (end() == itr) return false;
+         if (itr->value() != e.value()) return false;
+      }
+      return true;
+   }
+
    bool variant_object::operator==(const variant_object& obj) const {
       if (size() != obj.size()) return false;
 
