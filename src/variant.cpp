@@ -563,6 +563,27 @@ const variant_object&  variant::get_object() const {
   FC_THROW_EXCEPTION( bad_cast_exception, "Invalid cast from type '${type}' to Object", ("type",get_type()) );
 }
 
+bool variant::has_value(const variant& v) const {
+    if( get_type() != v.get_type() )
+       return false;
+
+    if( is_double() )  return std::abs(as_double() - v.as_double()) < DOUBLE_ACCURACY;
+    if( is_int64() )   return as_int64()      == v.as_int64();
+    if( is_uint64() )  return as_uint64()     == v.as_uint64();
+    if( is_int128() )  return as_int128()     == v.as_int128();
+    if( is_uint128() ) return as_uint128()    == v.as_uint128();
+    if( is_time() )    return as_time_point() == v.as_time_point();
+    if( is_array() )   return get_array()     == v.get_array();
+    if( is_bool() )    return as_bool()       == v.as_bool();
+
+    if( is_object() )  return get_object().has_value(v.get_object());
+
+    if( get_type() == type_id::string_type )  return get_string() == get_string();
+    if( get_type() == type_id::blob_type )    return get_blob()   == get_blob();
+
+    return false;
+}
+
 void from_variant( const variant& var,  variants& vo )
 {
    vo = var.get_array();

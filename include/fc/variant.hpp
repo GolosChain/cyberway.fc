@@ -411,6 +411,9 @@ namespace fc
         explicit variant( const T& val );
 
         void clear();
+
+        bool has_value(const variant&) const;
+
       private:
 
         uint64_t to_uint64() const;
