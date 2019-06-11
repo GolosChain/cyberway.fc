@@ -297,7 +297,7 @@ bool variant::is_numeric()const
 
 bool variant::is_blob()const
 {
-    return get_type() == type_id::blob_type;
+    return get_type() == type_id::blob_type || get_type() == type_id::string_type;
 }
 
 int64_t variant::as_int64() const try {
@@ -437,6 +437,10 @@ string variant::as_string() const
 
 blob& variant::get_mutable_blob()
 {
+  if( get_type() == type_id::string_type ) {
+     auto v = variant(as_blob());
+     this->operator=(fc::move(v));
+  }
   if( get_type() == type_id::blob_type )
      return *value_.as_blob;
 
