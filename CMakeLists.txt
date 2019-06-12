@@ -36,6 +36,7 @@ SET(CMAKE_FIND_LIBRARY_SUFFIXES ".a;.so")
 IF(NOT APPLE)
  # Linux or other unix
  SET(rt_library rt )
+ SET(CMAKE_THREAD_PREFER_PTHREAD TRUE)
  SET(pthread_library pthread)
 ELSE(NOT APPLE)
  ADD_COMPILE_FLAG("-D_GNU_SOURCE")
