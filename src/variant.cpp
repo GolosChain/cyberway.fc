@@ -568,6 +568,9 @@ const variant_object&  variant::get_object() const {
 }
 
 bool variant::has_value(const variant& v) const {
+    if( v.is_null() )
+        return true;
+
     if( get_type() != v.get_type() )
        return false;
 

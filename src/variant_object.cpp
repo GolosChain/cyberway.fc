@@ -169,7 +169,7 @@ namespace fc
       for (auto& e: obj) {
          auto itr = find(e.key());
          if (end() == itr) return false;
-         if (itr->value() != e.value()) return false;
+         if (!itr->value().has_value(e.value())) return false;
       }
       return true;
    }
