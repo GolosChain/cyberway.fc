@@ -242,7 +242,7 @@ namespace fc {
           _valid = false;
       }
     private:
-      template<typename U> friend class optional;
+      template<typename U> friend class fc::optional;
       T&       ref()      { return *ptr(); }
       const T& ref()const { return *ptr(); }
       T*       ptr()      { return reinterpret_cast<T*>(&_value);  }
