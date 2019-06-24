@@ -389,7 +389,7 @@ namespace fc
    }
 
    /** replaces the value at \a key with \a var or insert's \a key if not found */
-   mutable_variant_object& mutable_variant_object::set( string key, variant var )
+   mutable_variant_object& mutable_variant_object::set( string key, variant var ) &
    {
       auto itr = find(key);
       if( itr != end() )
@@ -403,16 +403,36 @@ namespace fc
       return *this;
    }
 
+   mutable_variant_object mutable_variant_object::set( string key, variant var ) &&
+   {
+      auto itr = find( key.c_str() );
+      if( itr != end() )
+      {
+         itr->set( fc::move(var) );
+      }
+      else
+      {
+         _key_value->push_back( entry( fc::move(key), fc::move(var) ) );
+      }
+      return std::move(*this);
+   }
+
    /** Appends \a key and \a var without checking for duplicates, designed to
     *  simplify construction of dictionaries using (key,val)(key2,val2) syntax
     */
-   mutable_variant_object& mutable_variant_object::operator()( string key, variant var )
+   mutable_variant_object& mutable_variant_object::operator()( string key, variant var ) &
    {
       _key_value->emplace_back(fc::move(key), fc::move(var));
       return *this;
    }
 
-   mutable_variant_object& mutable_variant_object::operator()( const variant_object& vo )
+   mutable_variant_object mutable_variant_object::operator()( string key, variant var ) &&
+   {
+      _key_value->push_back( entry( fc::move(key), fc::move(var) ) );
+      return std::move(*this);
+   }
+
+   mutable_variant_object& mutable_variant_object::operator()( const variant_object& vo ) &
    {
       reserve(vo.size());
       for( const variant_object::entry& e : vo )
@@ -420,7 +440,14 @@ namespace fc
       return *this;
    }
 
-   mutable_variant_object& mutable_variant_object::operator()( const mutable_variant_object& mvo )
+   mutable_variant_object mutable_variant_object::operator()( const variant_object& vo ) &&
+   {
+      for( const variant_object::entry& e : vo )
+         set( e.key(), e.value() );
+      return std::move(*this);
+   }
+
+   mutable_variant_object& mutable_variant_object::operator()( const mutable_variant_object& mvo ) &
    {
       if( &mvo == this )     // mvo(mvo) is no-op
          return *this;
@@ -432,6 +459,13 @@ namespace fc
 
    bool mutable_variant_object::operator==(const variant_object& obj) const {
       return obj == *this;
+   }
+
+   mutable_variant_object mutable_variant_object::operator()( const mutable_variant_object& mvo ) &&
+   {
+      for( const mutable_variant_object::entry& e : mvo )
+         set( e.key(), e.value() );
+      return std::move(*this);
    }
 
    void to_variant( const mutable_variant_object& var,  variant& vo )
