@@ -52,6 +52,10 @@ ENDIF()
 
 find_package(OpenSSL REQUIRED)
 
+IF(APPLE)
+  ADD_COMPILE_FLAG("-D_GNU_SOURCE")
+endif()
+
 set( fc_sources
      src/uint128.cpp
      src/real128.cpp
@@ -127,7 +131,7 @@ find_package(Boost 1.66 REQUIRED COMPONENTS
     date_time
     filesystem
     chrono
-    unit_test_framework
+    # unit_test_framework
     iostreams)
   
 IF(APPLE)
