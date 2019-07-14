@@ -40,6 +40,18 @@ namespace fc { namespace raw {
          {
             fc::raw::pack( s, v );
          }
+         virtual void handle( const time_point& v)const
+         {
+            fc::raw::pack( s, v );
+         }
+         virtual void handle( const __int128& v)const
+         {
+            fc::raw::pack( s, v );
+         }
+         virtual void handle( const unsigned __int128& v)const
+         {
+            fc::raw::pack( s, v);
+         }
         
          Stream& s;
         
