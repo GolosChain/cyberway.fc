@@ -24,7 +24,7 @@ namespace fc {
       typedef T value_type;
       typedef typename std::aligned_storage<sizeof(T), alignof(T)>::type storage_type;
 
-      optional():_valid(false){}
+      optional() = default;
       ~optional(){ reset(); }
 
       optional( optional& o )
@@ -248,7 +248,7 @@ namespace fc {
       T*       ptr()      { return reinterpret_cast<T*>(&_value);  }
       const T* ptr()const { return reinterpret_cast<const T*>(&_value); }
 
-      bool         _valid;
+      bool         _valid = false;
       storage_type _value;
   };
 
