@@ -585,8 +585,8 @@ bool variant::has_value(const variant& v) const {
 
     if( is_object() )  return get_object().has_value(v.get_object());
 
-    if( get_type() == type_id::string_type )  return get_string() == get_string();
-    if( get_type() == type_id::blob_type )    return get_blob()   == get_blob();
+    if( get_type() == type_id::string_type )  return get_string() == v.get_string();
+    if( get_type() == type_id::blob_type )    return get_blob()   == v.get_blob();
 
     return false;
 }
