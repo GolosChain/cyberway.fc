@@ -515,7 +515,7 @@ __uint128 variant::to_uint128() const {
     if( is_uint128() || is_int128()) {
         return value_.as_uint128;
     } else if (is_string()) {
-       return lexical_cast_128(value_.as_string);
+       return lexical_cast_128(*value_.as_string);
     } else {
        return as_uint64();
     }
